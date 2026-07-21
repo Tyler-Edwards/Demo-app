@@ -11,6 +11,7 @@
     "run:20-emails": "tsx scripts/run-20-emails.mjs"
   },
   "dependencies": {
+    "@overmind-lab/trace-sdk": "^0.0.6",
     "google-auth-library": "^10.9.0",
     "googleapis": "^173.0.0",
     "iron-session": "^8.0.4",

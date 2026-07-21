@@ -1,4 +1,12 @@
 import { z } from "zod";
+import {
+  initOvermind,
+  recordException,
+  spanAttrs,
+  tracer,
+} from "@/lib/agent/telemetry";
+
+initOvermind();
 
 const LlmExtractionSchema = z.object({
   isInvoice: z.boolean(),
@@ -128,46 +136,97 @@ From: ${input.from}
 Body / attachments text:
 ${input.text.slice(0, 10000)}`;
 
-  const response = await fetch(endpoint.url, {
-    method: "POST",
-    headers: endpoint.headers,
-    body: JSON.stringify({
-      model: endpoint.model,
-      temperature: 0,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userPrompt },
-      ],
-      response_format: { type: "json_object" },
-    }),
-  });
+  return tracer.startActiveSpan(
+    "analyze_email_with_llm",
+    { attributes: spanAttrs("FUNCTION") },
+    async (span) => {
+      span.setAttribute(
+        "inputs",
+        JSON.stringify({
+          subject: input.subject,
+          from: input.from,
+          date: input.date,
+        }),
+      );
 
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => "");
-    throw new Error(
-      `LLM request failed (${response.status}): ${errorText.slice(0, 240) || response.statusText}`,
-    );
-  }
+      try {
+        const result = await tracer.startActiveSpan(
+          "llm_chat_completions",
+          {
+            attributes: spanAttrs("LLM", {
+              "genai.provider": endpoint.provider,
+              "genai.model": endpoint.model,
+            }),
+          },
+          async (llmSpan) => {
+            const response = await fetch(endpoint.url, {
+              method: "POST",
+              headers: endpoint.headers,
+              body: JSON.stringify({
+                model: endpoint.model,
+                temperature: 0,
+                messages: [
+                  { role: "system", content: SYSTEM_PROMPT },
+                  { role: "user", content: userPrompt },
+                ],
+                response_format: { type: "json_object" },
+              }),
+            });
 
-  const data = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) {
-    throw new Error("LLM returned an empty response.");
-  }
+            if (!response.ok) {
+              const errorText = await response.text().catch(() => "");
+              throw new Error(
+                `LLM request failed (${response.status}): ${errorText.slice(0, 240) || response.statusText}`,
+              );
+            }
 
-  const parsed = extractJsonObject(content) as Record<string, unknown>;
+            const data = (await response.json()) as {
+              choices?: Array<{ message?: { content?: string } }>;
+              usage?: {
+                prompt_tokens?: number;
+                completion_tokens?: number;
+                total_tokens?: number;
+              };
+            };
 
-  // Some models return confidence as 0–100; normalize to 0–1 for the schema.
-  if (typeof parsed.confidence === "number" && parsed.confidence > 1) {
-    parsed.confidence = Math.min(parsed.confidence / 100, 1);
-  }
+            if (data.usage?.prompt_tokens != null) {
+              llmSpan.setAttribute("genai.prompt_tokens", data.usage.prompt_tokens);
+            }
+            if (data.usage?.completion_tokens != null) {
+              llmSpan.setAttribute(
+                "genai.completion_tokens",
+                data.usage.completion_tokens,
+              );
+            }
 
-  const result = LlmExtractionSchema.safeParse(parsed);
-  if (!result.success) {
-    throw new Error(`LLM returned invalid invoice JSON: ${result.error.message}`);
-  }
+            const content = data.choices?.[0]?.message?.content;
+            if (!content) {
+              throw new Error("LLM returned an empty response.");
+            }
 
-  return result.data;
+            const parsed = extractJsonObject(content) as Record<string, unknown>;
+
+            if (typeof parsed.confidence === "number" && parsed.confidence > 1) {
+              parsed.confidence = Math.min(parsed.confidence / 100, 1);
+            }
+
+            const validated = LlmExtractionSchema.safeParse(parsed);
+            if (!validated.success) {
+              throw new Error(
+                `LLM returned invalid invoice JSON: ${validated.error.message}`,
+              );
+            }
+
+            return validated.data;
+          },
+        );
+
+        span.setAttribute("outputs", JSON.stringify(result));
+        return result;
+      } catch (err) {
+        recordException(span, err);
+        throw err;
+      }
+    },
+  );
 };
