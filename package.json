@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "verify:agent": "tsx scripts/verify-agent.mjs",
-    "run:20-emails": "tsx scripts/run-20-emails.mjs"
+    "run:20-emails": "tsx scripts/run-20-emails.mjs",
+    "python-agent:install": "pip install -r python-agent/requirements.txt",
+    "python-agent:dev": "cd python-agent && uvicorn server:app --reload --port 8000"
   },
   "dependencies": {
     "google-auth-library": "^10.9.0",

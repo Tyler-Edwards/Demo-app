@@ -47,7 +47,7 @@ export const POST = async (request: NextRequest) => {
     const emails = await fetchCandidateEmails(session.tokens, {
       maxResults: body.maxResults ?? 25,
     });
-    const invoices = await runInvoiceAgent(emails, "gmail");
+    const invoices = await runInvoiceAgent(emails, "gmail", session.email);
     const result: ScanResult = {
       scanned: emails.length,
       invoices,
