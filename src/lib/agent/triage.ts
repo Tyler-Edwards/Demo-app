@@ -1,5 +1,7 @@
+import { SpanStatusCode } from "@opentelemetry/api";
 import type { RawEmail } from "@/lib/gmail";
 import { analyzeEmailWithLlm, requireLlmConfigured } from "@/lib/agent/llm";
+import { ensureTelemetry, getTracer } from "@/lib/telemetry";
 import type { InvoiceRecord } from "@/lib/types";
 
 const toGmailUrl = (emailId: string, source: "gmail" | "demo") =>
@@ -7,7 +9,7 @@ const toGmailUrl = (emailId: string, source: "gmail" | "demo") =>
     ? "#"
     : `https://mail.google.com/mail/u/0/#inbox/${emailId}`;
 
-export const analyzeEmail = async (
+const analyzeEmailBody = async (
   email: RawEmail,
   source: "gmail" | "demo",
 ): Promise<InvoiceRecord | null> => {
@@ -54,7 +56,27 @@ export const analyzeEmail = async (
   };
 };
 
-export const runInvoiceAgent = async (
+export const analyzeEmail = async (
+  email: RawEmail,
+  source: "gmail" | "demo",
+): Promise<InvoiceRecord | null> => {
+  ensureTelemetry();
+  return getTracer().startActiveSpan(
+    "analyzeEmail",
+    { attributes: { "overmind.span.type": "TOOL" } },
+    async (span) => {
+      try {
+        return await analyzeEmailBody(email, source);
+      } catch (err) {
+        span.recordException(err as Error);
+        span.setStatus({ code: SpanStatusCode.ERROR });
+        throw err;
+      }
+    },
+  );
+};
+
+const runInvoiceAgentBody = async (
   emails: RawEmail[],
   source: "gmail" | "demo",
 ) => {
@@ -62,16 +84,50 @@ export const runInvoiceAgent = async (
 
   const invoices: InvoiceRecord[] = [];
 
-  for (const email of emails) {
-    const record = await analyzeEmail(email, source);
-    if (record) invoices.push(record);
-  }
+  await getTracer().startActiveSpan(
+    "batch_orchestration",
+    { attributes: { "overmind.span.type": "WORKFLOW" } },
+    async () => {
+      for (const email of emails) {
+        await getTracer().startActiveSpan("analyze_email", async () => {
+          const record = await analyzeEmail(email, source);
+          if (record) invoices.push(record);
+        });
+      }
+    },
+  );
 
-  invoices.sort((a, b) => {
-    const aDue = a.dueDate || "9999-12-31";
-    const bDue = b.dueDate || "9999-12-31";
-    return aDue.localeCompare(bDue);
+  await getTracer().startActiveSpan("sort_by_due_date", async () => {
+    invoices.sort((a, b) => {
+      const aDue = a.dueDate || "9999-12-31";
+      const bDue = b.dueDate || "9999-12-31";
+      return aDue.localeCompare(bDue);
+    });
   });
 
   return invoices;
+};
+
+export const runInvoiceAgent = async (
+  emails: RawEmail[],
+  source: "gmail" | "demo",
+) => {
+  ensureTelemetry();
+  return getTracer().startActiveSpan(
+    "Ledgerline Invoice Triage Agent",
+    { attributes: { "overmind.span.type": "ENTRY_POINT" } },
+    async (span) => {
+      try {
+        span.setAttribute("inputs.email_count", emails.length);
+        span.setAttribute("inputs.source", source);
+        const invoices = await runInvoiceAgentBody(emails, source);
+        span.setAttribute("outputs.invoice_count", invoices.length);
+        return invoices;
+      } catch (err) {
+        span.recordException(err as Error);
+        span.setStatus({ code: SpanStatusCode.ERROR });
+        throw err;
+      }
+    },
+  );
 };
