@@ -1,3 +1,4 @@
+import { observe, setTag } from "@/lib/agent/overmind";
 import { z } from "zod";
 
 const LlmExtractionSchema = z.object({
@@ -100,7 +101,7 @@ const extractJsonObject = (content: string) => {
   return JSON.parse(match[0]) as unknown;
 };
 
-export const analyzeEmailWithLlm = async (input: {
+const analyzeEmailWithLlmImpl = async (input: {
   subject: string;
   from: string;
   date: string;
@@ -151,7 +152,20 @@ ${input.text.slice(0, 10000)}`;
 
   const data = (await response.json()) as {
     choices?: Array<{ message?: { content?: string } }>;
+    usage?: {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      total_tokens?: number;
+    };
   };
+
+  setTag("genai.model", endpoint.model);
+  if (data.usage?.prompt_tokens != null) {
+    setTag("genai.prompt_tokens", data.usage.prompt_tokens);
+  }
+  if (data.usage?.completion_tokens != null) {
+    setTag("genai.completion_tokens", data.usage.completion_tokens);
+  }
   const content = data.choices?.[0]?.message?.content;
   if (!content) {
     throw new Error("LLM returned an empty response.");
@@ -171,3 +185,8 @@ ${input.text.slice(0, 10000)}`;
 
   return result.data;
 };
+
+export const analyzeEmailWithLlm = observe(
+  "analyzeEmailWithLlm",
+  analyzeEmailWithLlmImpl,
+);

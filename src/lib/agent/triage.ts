@@ -1,5 +1,6 @@
 import type { RawEmail } from "@/lib/gmail";
 import { analyzeEmailWithLlm, requireLlmConfigured } from "@/lib/agent/llm";
+import { entryPoint } from "@/lib/agent/overmind";
 import type { InvoiceRecord } from "@/lib/types";
 
 const toGmailUrl = (emailId: string, source: "gmail" | "demo") =>
@@ -54,7 +55,7 @@ export const analyzeEmail = async (
   };
 };
 
-export const runInvoiceAgent = async (
+const runInvoiceAgentImpl = async (
   emails: RawEmail[],
   source: "gmail" | "demo",
 ) => {
@@ -75,3 +76,8 @@ export const runInvoiceAgent = async (
 
   return invoices;
 };
+
+export const runInvoiceAgent = entryPoint(
+  "Ledgerline Invoice Triage Agent",
+  runInvoiceAgentImpl,
+);
