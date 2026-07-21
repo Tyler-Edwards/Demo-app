@@ -71,20 +71,59 @@ const responses = new Map([
   ],
 ]);
 
-let callIndex = 0;
-const demoOrder = ["demo-1", "demo-2", "demo-3", "demo-4", "demo-5"];
+const toGmailUrl = (emailId, source) =>
+  source === "demo" ? "#" : `https://mail.google.com/mail/u/0/#inbox/${emailId}`;
 
-globalThis.fetch = async () => {
-  const id = demoOrder[callIndex++] || "demo-3";
-  const payload = responses.get(id);
-  return {
-    ok: true,
-    status: 200,
-    text: async () => "",
-    json: async () => ({
-      choices: [{ message: { content: JSON.stringify(payload) } }],
-    }),
-  };
+globalThis.fetch = async (url, options) => {
+  if (String(url).endsWith("/triage")) {
+    const body = JSON.parse(options.body);
+    const invoices = [];
+
+    for (const email of body.emails) {
+      const llm = responses.get(email.id);
+      if (!llm?.isInvoice) continue;
+
+      const currency = llm.currency || "USD";
+      invoices.push({
+        id: `${body.source}-${email.id}`,
+        emailId: email.id,
+        threadId: email.threadId || undefined,
+        subject: email.subject,
+        from: email.from,
+        vendor: llm.vendor || "Unknown vendor",
+        receivedAt: new Date(email.date).toISOString(),
+        amount:
+          llm.amount != null
+            ? {
+                value: llm.amount,
+                currency,
+                raw: `${currency} ${llm.amount}`,
+              }
+            : null,
+        dueDate: llm.dueDate,
+        invoiceNumber: llm.invoiceNumber,
+        confidence: Number(llm.confidence.toFixed(2)),
+        summary: llm.summary || email.snippet || email.subject,
+        gmailUrl: toGmailUrl(email.id, body.source),
+        source: body.source,
+      });
+    }
+
+    invoices.sort((a, b) => {
+      const aDue = a.dueDate || "9999-12-31";
+      const bDue = b.dueDate || "9999-12-31";
+      return aDue.localeCompare(bDue);
+    });
+
+    return {
+      ok: true,
+      status: 200,
+      text: async () => "",
+      json: async () => ({ invoices }),
+    };
+  }
+
+  throw new Error(`Unexpected fetch URL: ${url}`);
 };
 
 const { runInvoiceAgent } = await import("../src/lib/agent/triage.ts");
