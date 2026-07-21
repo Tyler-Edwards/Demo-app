@@ -133,7 +133,7 @@ export const InvoiceDashboard = ({
           <div className="flex flex-col items-start gap-3 sm:items-end">
             <p className="text-sm text-[#0b1f33]/65">
               {!status.hasLlm
-                ? "LLM not configured — add OPENAI_API_KEY to .env.local"
+                ? "LLM not configured — add OVERMIND_API_KEY to .env.local"
                 : status.connected
                   ? `Connected as ${status.email || "Gmail account"}`
                   : status.googleConfigured
@@ -251,7 +251,7 @@ export const InvoiceDashboard = ({
               </p>
             ) : (
               <p className="text-xs text-[#8a3b2b]">
-                Set OPENAI_API_KEY or OLLAMA_BASE_URL
+                Set OVERMIND_API_KEY or OLLAMA_BASE_URL
               </p>
             )}
           </div>
@@ -259,7 +259,7 @@ export const InvoiceDashboard = ({
           {!status.hasLlm ? (
             <p className="border border-dashed border-[#8a3b2b]/30 bg-[#8a3b2b]/8 px-5 py-10 text-sm text-[#5c2418]">
               This app is LLM-only. Add{" "}
-              <code className="font-medium">OPENAI_API_KEY</code> (or{" "}
+              <code className="font-medium">OVERMIND_API_KEY</code> (or{" "}
               <code className="font-medium">OLLAMA_BASE_URL</code>) to{" "}
               <code className="font-medium">.env.local</code>, restart{" "}
               <code className="font-medium">npm run dev</code>, then scan.
@@ -363,7 +363,7 @@ export const InvoiceDashboard = ({
         <footer className="border-t border-[#0b1f33]/12 pt-6 text-xs leading-relaxed text-[#0b1f33]/55">
           LLM-only triage and extraction. Gmail uses read-only scope
           (`gmail.readonly`). Tokens stay in an encrypted local session cookie.
-          Configure `OPENAI_API_KEY` or `OLLAMA_BASE_URL` in `.env.local`.
+          Configure `OVERMIND_API_KEY` or `OLLAMA_BASE_URL` in `.env.local`.
         </footer>
       </main>
     </div>

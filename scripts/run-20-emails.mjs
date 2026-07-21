@@ -7,7 +7,7 @@ const loadEnvLocal = () => {
   try {
     raw = readFileSync(envPath, "utf8");
   } catch {
-    throw new Error("Missing .env.local — add OPENAI_API_KEY before running.");
+    throw new Error("Missing .env.local — add OVERMIND_API_KEY before running.");
   }
 
   for (const line of raw.split("\n")) {
@@ -31,9 +31,9 @@ const loadEnvLocal = () => {
 
 loadEnvLocal();
 
-if (!process.env.OPENAI_API_KEY && !process.env.OLLAMA_BASE_URL) {
+if (!process.env.OVERMIND_API_KEY && !process.env.OLLAMA_BASE_URL) {
   console.error(
-    "Hard failure: set OPENAI_API_KEY or OLLAMA_BASE_URL in .env.local",
+    "Hard failure: set OVERMIND_API_KEY or OLLAMA_BASE_URL in .env.local",
   );
   process.exit(1);
 }
@@ -62,7 +62,7 @@ const vendorHint = (from) =>
   from.replace(/<.*>/, "").replace(/"/g, "").trim() || "—";
 
 console.log(
-  `Running ${DEMO_EMAILS.length} emails through runInvoiceAgent (model=${process.env.OPENAI_MODEL || "default"})…\n`,
+  `Running ${DEMO_EMAILS.length} emails through runInvoiceAgent (model=${process.env.OVERMIND_MODEL || "default"})…\n`,
 );
 
 let invoices;

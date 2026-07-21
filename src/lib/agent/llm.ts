@@ -21,28 +21,28 @@ export type LlmEndpoint = {
 };
 
 export const isLlmConfigured = () =>
-  Boolean(process.env.OPENAI_API_KEY || process.env.OLLAMA_BASE_URL);
+  Boolean(process.env.OVERMIND_API_KEY || process.env.OLLAMA_BASE_URL);
 
 export const requireLlmConfigured = () => {
   if (isLlmConfigured()) return;
   throw new Error(
-    "LLM is required. Set OPENAI_API_KEY (or OLLAMA_BASE_URL for a local model) in .env.local, then restart the app.",
+    "LLM is required. Set OVERMIND_API_KEY (or OLLAMA_BASE_URL for a local model) in .env.local, then restart the app.",
   );
 };
 
 export const getLlmEndpoint = (): LlmEndpoint => {
   requireLlmConfigured();
 
-  if (process.env.OPENAI_API_KEY) {
+  if (process.env.OVERMIND_API_KEY) {
     return {
       provider: "openai",
       url:
-        process.env.OPENAI_BASE_URL ||
-        "https://api.openai.com/v1/chat/completions",
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+        process.env.OVERMIND_BASE_URL ||
+        "https://api.overmindlab.ai/api/v1/chat/completions",
+      model: process.env.OVERMIND_MODEL || "ft-858cb84e-qwen2-5-7b-instruct",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        Authorization: `Bearer ${process.env.OVERMIND_API_KEY}`,
       },
     };
   }

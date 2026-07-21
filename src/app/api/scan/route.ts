@@ -11,7 +11,7 @@ export const POST = async (request: NextRequest) => {
     return NextResponse.json(
       {
         error:
-          "LLM required. Add OPENAI_API_KEY or OLLAMA_BASE_URL to .env.local and restart.",
+          "LLM required. Add OVERMIND_API_KEY or OLLAMA_BASE_URL to .env.local and restart.",
       },
       { status: 400 },
     );
