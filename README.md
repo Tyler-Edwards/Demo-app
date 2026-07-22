@@ -18,8 +18,8 @@ cp .env.example .env.local
 Add at least one LLM config to `.env.local`:
 
 ```bash
-OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4o-mini
+OVERMIND_API_KEY=ovr_...
+OPENAI_MODEL=ft-69e31d7f-qwen2-5-14b-instruct
 ```
 
 Or for a fully local model:
