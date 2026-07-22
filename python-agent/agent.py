@@ -43,15 +43,27 @@ class LlmExtraction(BaseModel):
 
 
 def require_llm_configured() -> None:
-    if os.environ.get("OPENAI_API_KEY") or os.environ.get("OLLAMA_BASE_URL"):
+    if (
+        os.environ.get("OVERMIND_API_KEY")
+        or os.environ.get("OPENAI_API_KEY")
+        or os.environ.get("OLLAMA_BASE_URL")
+    ):
         return
     raise ValueError(
-        "LLM is required. Set OPENAI_API_KEY (or OLLAMA_BASE_URL for a local model) in .env.local, then restart the app."
+        "LLM is required. Set OVERMIND_API_KEY (or OPENAI_API_KEY / OLLAMA_BASE_URL for a local model) in .env.local, then restart the app."
     )
 
 
 def get_openai_client() -> tuple[OpenAI, str]:
     require_llm_configured()
+
+    if os.environ.get("OVERMIND_API_KEY"):
+        client = OpenAI(
+            api_key=os.environ["OVERMIND_API_KEY"],
+            base_url="https://api.overmindlab.ai/api/v1",
+        )
+        model = os.environ.get("OPENAI_MODEL", "ft-69e31d7f-qwen2-5-14b-instruct")
+        return client, model
 
     if os.environ.get("OPENAI_API_KEY"):
         base_url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")

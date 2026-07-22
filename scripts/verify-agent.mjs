@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 
-process.env.OPENAI_API_KEY = "test-key";
-process.env.OPENAI_MODEL = "gpt-4o-mini";
+process.env.OVERMIND_API_KEY = "test-key";
+process.env.OPENAI_MODEL = "ft-69e31d7f-qwen2-5-14b-instruct";
 
 const responses = new Map([
   [
