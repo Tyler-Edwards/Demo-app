@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { initTelemetry, withEntryPointSpan } from "@/lib/telemetry";
+
+initTelemetry();
 
 const LlmExtractionSchema = z.object({
   isInvoice: z.boolean(),
@@ -100,7 +103,7 @@ const extractJsonObject = (content: string) => {
   return JSON.parse(match[0]) as unknown;
 };
 
-export const analyzeEmailWithLlm = async (input: {
+const analyzeEmailWithLlmInner = async (input: {
   subject: string;
   from: string;
   date: string;
@@ -171,3 +174,13 @@ ${input.text.slice(0, 10000)}`;
 
   return result.data;
 };
+
+export const analyzeEmailWithLlm = (input: {
+  subject: string;
+  from: string;
+  date: string;
+  text: string;
+}): Promise<LlmExtraction> =>
+  withEntryPointSpan("Ledgerline Invoice Triage Agent", input, () =>
+    analyzeEmailWithLlmInner(input),
+  );
