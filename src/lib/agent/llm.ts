@@ -37,7 +37,7 @@ export const getLlmEndpoint = (): LlmEndpoint => {
     return {
       provider: "openai",
       url: "https://api.overmindlab.ai/api/v1/chat/completions",
-      model: process.env.OPENAI_MODEL || "ft-1b4b9f25-qwen3-5-9b",
+      model: process.env.OPENAI_MODEL || "ft-f361c700-qwen3-5-27b",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${process.env.OVERMIND_API_KEY}`,

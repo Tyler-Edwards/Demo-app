@@ -58,7 +58,7 @@ def get_openai_client() -> tuple[OpenAI, str]:
             api_key=os.environ["OVERMIND_API_KEY"],
             base_url="https://api.overmindlab.ai/api/v1",
         )
-        model = os.environ.get("OPENAI_MODEL", "ft-1b4b9f25-qwen3-5-9b")
+        model = os.environ.get("OPENAI_MODEL", "ft-f361c700-qwen3-5-27b")
         return client, model
 
     base = (os.environ.get("OLLAMA_BASE_URL") or "http://127.0.0.1:11434").rstrip("/")
