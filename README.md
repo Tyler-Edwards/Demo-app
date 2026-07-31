@@ -19,7 +19,7 @@ Add at least one LLM config to `.env.local`:
 
 ```bash
 OVERMIND_API_KEY=ovr_...
-OPENAI_MODEL=ft-1b4b9f25-qwen3-5-9b
+OPENAI_MODEL=ft-f361c700-qwen3-5-27b
 ```
 
 Or for a fully local model:
