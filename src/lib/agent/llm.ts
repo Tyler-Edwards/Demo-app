@@ -37,11 +37,20 @@ export const getLlmEndpoint = (): LlmEndpoint => {
   requireLlmConfigured();
 
   if (process.env.OVERMIND_API_KEY) {
+    // Respect OVERMIND_LLM_BASE_URL / OVERMIND_API_URL so a local dev API key
+    // (only valid against a local backend's APIToken table) doesn't get sent
+    // to production, which would 401 with "Invalid API key."
+    const base = (
+      process.env.OVERMIND_LLM_BASE_URL ||
+      `${(process.env.OVERMIND_API_URL || "https://api.overmindlab.ai").replace(/\/$/, "")}/api/v1`
+    ).replace(/\/$/, "");
     return {
       provider: "openai",
-      url: "https://api.overmindlab.ai/api/v1/chat/completions",
+      url: `${base}/chat/completions`,
       // Ledgerline Invoice Triage Agent — Overmind alias, retargeted from the dashboard
-      model: "overmind/4a675885-6f46-4a29-be06-ce8ccdcb815b",
+      model:
+        process.env.OVERMIND_LLM_MODEL ||
+        "overmind/4a675885-6f46-4a29-be06-ce8ccdcb815b",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${process.env.OVERMIND_API_KEY}`,
