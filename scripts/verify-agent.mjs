@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 
 process.env.OVERMIND_API_KEY = "test-key";
-process.env.OPENAI_MODEL = "ft-1b4b9f25-qwen3-5-9b";
+process.env.OPENAI_MODEL = "ft-3a2787fa-qwen2-5-coder-32b-instruct";
 
 const responses = new Map([
   [
